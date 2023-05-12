@@ -13,10 +13,8 @@ class SyntheticData:
         self.n = 1000000  # number of samples
         self.d = 5  # dimensionality of data
         self.sig = 0.2  # (Gaussian) noise rate
-        self.name = "ds_{}".format(self.n)  # ds_1000000
-        self.fname = "ds_synthetic_{}_{}.vw.gz".format(
-            self.n, self.d
-        )  # ds_synthetic_1000000_5.vw.gz
+        self.name = f"ds_{self.n}"
+        self.fname = f"ds_synthetic_{self.n}_{self.d}.vw.gz"
 
     def create(self, save_to_path):
         """
@@ -38,7 +36,7 @@ class SyntheticData:
         self.save_vw_reg_dataset(X, Y, save_to_path)
         percent = 0.80
         ds = pd.read_csv(save_to_path + self.fname, header=None)
-        ds_train = ds[0 : math.floor(ds.size * percent)]
+        ds_train = ds[:math.floor(ds.size * percent)]
         ds_test = ds[math.floor(ds.size * percent) :]
 
         ds.to_csv(save_to_path + self.name + ".dat", header=False, index=False)

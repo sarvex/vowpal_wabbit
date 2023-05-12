@@ -6,25 +6,25 @@ import numpy as np
 # available_shots = {'three':3, "one":1}
 available_shots = {"three": 3}
 
-for shot, shots in available_shots.items():
-    print("## perform experiments on {}-shot wikipara-10K ##".format(shot))
-    # shots = available_shots[shot]
-    num_of_classes = 10000
-    leaf_example_multiplier = 10  # 2
-    lr = 0.1
-    bits = 29  # 30
-    passes = 1  # 2
-    # hal_version = 1
-    # num_queries = 1 #int(np.log(shots*num_of_classes)/np.log(2.))
-    alpha = 0.1
-    learn_at_leaf = False
-    use_oas = False
-    dream_at_update = 1
-    dream_repeats = 15
-    loss = "squared"
-    online = True
-    sort_feature = True
+# shots = available_shots[shot]
+num_of_classes = 10000
+leaf_example_multiplier = 10  # 2
+lr = 0.1
+bits = 29  # 30
+passes = 1  # 2
+# hal_version = 1
+# num_queries = 1 #int(np.log(shots*num_of_classes)/np.log(2.))
+alpha = 0.1
+learn_at_leaf = False
+use_oas = False
+dream_at_update = 1
+dream_repeats = 15
+loss = "squared"
+online = True
+sort_feature = True
 
+for shot, shots in available_shots.items():
+    print(f"## perform experiments on {shot}-shot wikipara-10K ##")
     tree_node = int(
         2
         * passes
@@ -35,14 +35,14 @@ for shot, shots in available_shots.items():
         )
     )
 
-    train_data = "paradata10000_{}_shot.vw.train".format(shot)
-    test_data = "paradata10000_{}_shot.vw.test".format(shot)
+    train_data = f"paradata10000_{shot}_shot.vw.train"
+    test_data = f"paradata10000_{shot}_shot.vw.test"
     if os.path.exists(train_data) is not True:
-        os.system("wget http://kalman.ml.cmu.edu/wen_datasets/{}".format(train_data))
+        os.system(f"wget http://kalman.ml.cmu.edu/wen_datasets/{train_data}")
     if os.path.exists(test_data) is not True:
-        os.system("wget http://kalman.ml.cmu.edu/wen_datasets/{}".format(test_data))
+        os.system(f"wget http://kalman.ml.cmu.edu/wen_datasets/{test_data}")
 
-    saved_model = "{}.vw".format(train_data)
+    saved_model = f"{train_data}.vw"
 
     print("## Training...")
     start = time.time()

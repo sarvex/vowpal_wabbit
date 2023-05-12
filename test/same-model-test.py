@@ -59,7 +59,7 @@ if __name__ == "__main__":
             "--holdout_off",
             "--predict_only_model",
             "--readable_model",
-            "readable_model" + str(index) + ".txt",
+            f"readable_model{str(index)}.txt",
         ]
         print("Starting VW with args: " + " ".join(cmd_args[1:]))
         vw_procs.append(
@@ -82,7 +82,7 @@ if __name__ == "__main__":
 
     readable_model_contents = []
     for index, _ in enumerate(args.data_files):
-        with open("readable_model" + str(index) + ".txt") as f:
+        with open(f"readable_model{str(index)}.txt") as f:
             readable_model_contents.append(f.read())
 
     if len(set(readable_model_contents)) != 1:

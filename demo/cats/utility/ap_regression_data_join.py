@@ -68,9 +68,7 @@ class PredictDataJoiner_ap:
 
     def get_regression_val(self, data_line):
         data_line = data_line.lstrip()
-        ca_end_position = 0
-        if data_line.startswith("ca"):
-            ca_end_position = 2
+        ca_end_position = 2 if data_line.startswith("ca") else 0
         separator_position = data_line.find("|")
         return float(data_line[ca_end_position:separator_position])
 

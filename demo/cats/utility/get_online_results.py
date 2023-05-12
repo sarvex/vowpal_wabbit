@@ -41,9 +41,7 @@ class EvaluatorOnline:
 
     def eval(self):
         data_file = open(self.file_name, "r")
-        line = data_file.readline()
-
-        while line:
+        while line := data_file.readline():
             # Get data
             if line.find("CATS-online") != -1:
                 self.costs.append(
@@ -94,8 +92,6 @@ class EvaluatorOnline:
                 s1 = line.split()
                 self.costs[len(self.costs) - 1].time = float(nextword("real", s1))
 
-            line = data_file.readline()
-
         self.get_best_loss()
 
         self.saveConfidenceIntervals(self.best_cats)
@@ -135,12 +131,11 @@ class EvaluatorOnline:
         loss_ = []
         time_ = []
         for c in self.costs:
-            if c.model == model:
-                if c.loss < 1:
-                    loss_.append(c.loss)
-                    time_.append(c.time)
-                    n_.append(c.n)
-                    h_.append(c.h)
+            if c.model == model and c.loss < 1:
+                loss_.append(c.loss)
+                time_.append(c.time)
+                n_.append(c.n)
+                h_.append(c.h)
         return loss_, time_, n_, h_
 
     def get_best_loss(self):
@@ -163,31 +158,28 @@ class EvaluatorOnline:
 
     def getTime(self, model, n, hp, h, mode):  # assumes costs is soreted wrt hp and n
         times = []
-        if mode == "hp":
+        if mode == "h":
             n_ = []
             for c in self.costs:
-                if c.model == model:
-                    if c.h == hp:
-                        times.append(c.time)
-                        n_.append(c.n)
+                if c.model == model and (c.h / c.n) == h:
+                    times.append(c.time)
+                    n_.append(c.n)
             return times, n_
 
-        elif mode == "h":
+        elif mode == "hp":
             n_ = []
             for c in self.costs:
-                if c.model == model:
-                    if (c.h / c.n) == h:
-                        times.append(c.time)
-                        n_.append(c.n)
+                if c.model == model and c.h == hp:
+                    times.append(c.time)
+                    n_.append(c.n)
             return times, n_
 
         elif mode == "n":
             h_ = []
             for c in self.costs:
-                if c.model == model:
-                    if c.n == n:
-                        times.append(c.time)
-                        h_.append(c.h)
+                if c.model == model and c.n == n:
+                    times.append(c.time)
+                    h_.append(c.h)
             return times, h_
 
     def printAllResults(self):
@@ -208,14 +200,13 @@ class EvaluatorOnline:
 
     def find_error(self):
         for c in self.costs:
-            if c.loss == sys.float_info.max:
-                if c.time < self.max_time:
-                    print("error in model={0}, n={1}, h={2}".format(c.model, c.n, c.h))
+            if c.loss == sys.float_info.max and c.time < self.max_time:
+                print("error in model={0}, n={1}, h={2}".format(c.model, c.n, c.h))
 
 
 if __name__ == "__main__":
     namee = "BNG_cpu_act"
-    data_file = "../../results/" + namee + "_online_validation.txt"
+    data_file = f"../../results/{namee}_online_validation.txt"
     alpha = 0.05
     model = "cats"
     quiet = False

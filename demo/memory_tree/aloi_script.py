@@ -33,12 +33,12 @@ tree_node = int(
 train_data = "aloi_train.vw"
 test_data = "aloi_test.vw"
 if os.path.exists(train_data) is not True:
-    os.system("wget http://kalman.ml.cmu.edu/wen_datasets/{}".format(train_data))
+    os.system(f"wget http://kalman.ml.cmu.edu/wen_datasets/{train_data}")
 if os.path.exists(test_data) is not True:
-    os.system("wget http://kalman.ml.cmu.edu/wen_datasets/{}".format(test_data))
+    os.system(f"wget http://kalman.ml.cmu.edu/wen_datasets/{test_data}")
 
 
-saved_model = "{}.vw".format(train_data)
+saved_model = f"{train_data}.vw"
 
 print("## Training...")
 start = time.time()
@@ -50,8 +50,8 @@ train_time = time.time() - start
 # test:
 print("## Testing...")
 start = time.time()
-os.system("../../build/vowpalwabbit/cli/vw {} -i {}".format(test_data, saved_model))
+os.system(f"../../build/vowpalwabbit/cli/vw {test_data} -i {saved_model}")
 
 test_time = time.time() - start
 
-print("## train time {}, and test time {}".format(train_time, test_time))
+print(f"## train time {train_time}, and test time {test_time}")

@@ -1,12 +1,12 @@
 from sys import argv
 from sys import exit
 
-dict = {}
 if len(argv) < 4:
     print("Usage: test_conll_file annotation_file_from_vw tag_id_mapping")
     exit(1)
-for data in open(argv[3]).readlines():
-    dict[data.strip().split()[1]] = data.strip().split()[0]
+dict = {
+    data.strip().split()[1]: data.strip().split()[0] for data in open(argv[3])
+}
 annotation = open(argv[2]).readlines()
 # for item in list(annotation):
 # 	if item == ' w\n':

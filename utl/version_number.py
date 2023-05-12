@@ -20,7 +20,7 @@ if git_shallow != "false":
 git_describe = subprocess.check_output(
     ["git", "describe", "--tags", "--first-parent", "--long"], text=True
 ).strip()
-debug_print("Output of 'git describe' is: " + git_describe)
+debug_print(f"Output of 'git describe' is: {git_describe}")
 
 r = re.compile(
     r"^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<tag>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?-(?P<commit>\d+)-g(?P<hash>[0-9a-fA-F]+)$"
@@ -31,12 +31,12 @@ if m is None:
     debug_print("Error: 'git describe' output did not match regex!")
     sys.exit(1)
 
-major = m.group("major")
-minor = m.group("minor")
-patch = m.group("patch")
-prerelease_tag = m.group("tag")
-commit_count = m.group("commit")  # number of commits after latest git tag
-hash = m.group("hash")
+major = m["major"]
+minor = m["minor"]
+patch = m["patch"]
+prerelease_tag = m["tag"]
+commit_count = m["commit"]
+hash = m["hash"]
 debug_print(f"Major: {major}")
 debug_print(f"Minor: {minor}")
 debug_print(f"Patch: {patch}")
@@ -51,13 +51,10 @@ if commit_count == "0":
         print(f"{major}.{minor}.{patch}+{hash}")
     else:
         print(f"{major}.{minor}.{patch}-{prerelease_tag}+{hash}")
+elif prerelease_tag is None:
+    # Increment the patch number so that this build is versioned after previous official release
+    print(f"{major}.{minor}.{int(patch)+1}-ci.{commit_count}+{hash}")
 else:
-    # Non-official build
-    # Append a "ci.[number]" tag
-    if prerelease_tag is None:
-        # Increment the patch number so that this build is versioned after previous official release
-        print(f"{major}.{minor}.{int(patch)+1}-ci.{commit_count}+{hash}")
-    else:
-        # The most recent official release has a pre-release tag
-        # Longer tags are always versioned after shorter tags, so no need to increment version number
-        print(f"{major}.{minor}.{patch}-{prerelease_tag}.ci.{commit_count}+{hash}")
+    # The most recent official release has a pre-release tag
+    # Longer tags are always versioned after shorter tags, so no need to increment version number
+    print(f"{major}.{minor}.{patch}-{prerelease_tag}.ci.{commit_count}+{hash}")

@@ -146,8 +146,8 @@ class OnlineCressieRead:
         if c > 0:
             assert (
                 w + 1e-6 >= self.wmin and w <= self.wmax + 1e-6
-            ), "w = {} < {} < {}".format(self.wmin, w, self.wmax)
-            assert r >= 0 and r <= 1, "r = {}".format(r)
+            ), f"w = {self.wmin} < {w} < {self.wmax}"
+            assert r >= 0 and r <= 1, f"r = {r}"
 
             decay = self.tau**c
             self.n = decay * self.n + c

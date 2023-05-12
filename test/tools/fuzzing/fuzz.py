@@ -28,7 +28,7 @@ def find_in_path(paths, file_matcher, debug_file_name):
         else:
             # path does not exist
             continue
-    raise ValueError("Couldn't find {}".format(debug_file_name))
+    raise ValueError(f"Couldn't find {debug_file_name}")
 
 
 def find_or_use_user_supplied_path(
@@ -40,17 +40,16 @@ def find_or_use_user_supplied_path(
 ):
     if user_supplied_bin_path is None:
         return find_in_path(search_paths, is_correct_bin_func, debug_file_name)
-    else:
-        if (
-            not Path(user_supplied_bin_path).exists()
-            or not Path(user_supplied_bin_path).is_file()
-        ):
-            raise ValueError(
-                "Invalid {debug_file_name} binary path: {}".format(
-                    (user_supplied_bin_path)
-                )
+    if (
+        not Path(user_supplied_bin_path).exists()
+        or not Path(user_supplied_bin_path).is_file()
+    ):
+        raise ValueError(
+            "Invalid {debug_file_name} binary path: {}".format(
+                (user_supplied_bin_path)
             )
-        return user_supplied_bin_path
+        )
+    return user_supplied_bin_path
 
 
 def find_test_binary(test_base_ref_dir, user_supplied_bin_path):

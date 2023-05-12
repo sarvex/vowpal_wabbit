@@ -21,11 +21,11 @@ author = "John langford et al"
 
 # Read version automatically from vowpalwabbit.__version__ or use env var
 override_package_version = os.getenv("VW_SPHINX_VERSION_OVERRIDE")
-if override_package_version != None:
-    version = override_package_version
-else:
+if override_package_version is None:
     version = vowpalwabbit.__version__
 
+else:
+    version = override_package_version
 release = version
 
 # -- General configuration ---------------------------------------------------
@@ -189,21 +189,18 @@ def add_binder_url_for_page(
 
 def _split_repo_url(url):
     """Split a repository URL into an org / repo combination."""
-    if "github.com/" in url:
-        end = url.split("github.com/")[-1]
-        org, repo = end.split("/")[:2]
-    else:
+    if "github.com/" not in url:
         raise ValueError(
             f"Currently Binder/JupyterHub repositories must be on GitHub, got {url}"
         )
+    end = url.split("github.com/")[-1]
+    org, repo = end.split("/")[:2]
     return org, repo
 
 
 # This helps to document __init__
 def skip(app, what, name, obj, would_skip, options):
-    if name == "__init__":
-        return False
-    return would_skip
+    return False if name == "__init__" else would_skip
 
 
 def setup(app):

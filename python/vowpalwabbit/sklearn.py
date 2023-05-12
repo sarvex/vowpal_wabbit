@@ -339,7 +339,7 @@ class VW(BaseEstimator):
             params.pop(key, None)
 
         # add vw attributes
-        params.update(self._get_vw_params())
+        params |= self._get_vw_params()
 
         self.vw_ = Workspace(**params)
 
@@ -354,11 +354,8 @@ class VW(BaseEstimator):
 
             # add examples to model
             for n in range(passes):
-                if n >= 1:
-                    examples = shuffle(X)
-                else:
-                    examples = X
-                for idx, example in enumerate(examples):
+                examples = shuffle(X) if n >= 1 else X
+                for example in examples:
                     self.vw_.learn(example)
 
         return self
@@ -427,7 +424,7 @@ class VW(BaseEstimator):
 
         params = self.get_params()
         params.update(kwargs)
-        private_params = dict()
+        private_params = {}
         for k, v in params.copy().items():
             if k.endswith("_"):
                 private_params[k] = v
@@ -487,7 +484,7 @@ class VW(BaseEstimator):
 
     def _get_vw_params(self):
         """This returns specific vw parameters to inject at fit"""
-        return dict()
+        return {}
 
     def __del__(self):
         self.vw_ = None
@@ -495,7 +492,7 @@ class VW(BaseEstimator):
     def __repr__(self, **kwargs):
         vw_vars = sorted((k, v) for k, v in vars(self).items() if v is not None)
         items = ["{i[0]}: {i[1]}".format(i=i) for i in vw_vars]
-        return "{}({})".format(self.__class__.__name__, ", ".join(items))
+        return f'{self.__class__.__name__}({", ".join(items)})'
 
     def __getstate__(self):
         """Support pickling"""
@@ -807,9 +804,7 @@ def tovw(x, y=None, sample_weight=None, convert_labels=False):
             raise ValueError("Sample weights must be 1D array or scalar")
         if sample_weight.shape != (x.shape[0],):
             raise ValueError(
-                "Sample weight shape == {}, expected {}".format(
-                    sample_weight.shape, (x.shape[0],)
-                )
+                f"Sample weight shape == {sample_weight.shape}, expected {(x.shape[0], )}"
             )
     else:
         sample_weight = np.ones(x.shape[0], dtype=int)

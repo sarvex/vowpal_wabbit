@@ -51,10 +51,10 @@ class SRM:
 
 
 if __name__ == "__main__":
-    # Example:
-    usage = "\nUsage: python3 srm.py --p <prediction_file> --d <action_cost_probability_file> -m <max_action> -i <min_action> -k <partitions> --bandwidth <bandwidth>"
-    usage += "\nExample: python3 srm.py --p results/friday_2_2048_4.ap --d results/friday_2.acp -m 23959 -i 185 -k 2048 --bandwidth 4"
-
+    usage = (
+        "\nUsage: python3 srm.py --p <prediction_file> --d <action_cost_probability_file> -m <max_action> -i <min_action> -k <partitions> --bandwidth <bandwidth>"
+        + "\nExample: python3 srm.py --p results/friday_2_2048_4.ap --d results/friday_2.acp -m 23959 -i 185 -k 2048 --bandwidth 4"
+    )
     predict_file = "predict.txt"
     data_file = "data.txt"
     max_val = 100.0

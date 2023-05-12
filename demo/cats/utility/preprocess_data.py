@@ -59,7 +59,7 @@ class PreProcessCSVData:
         ds = df.sample(frac=1)
 
         print("Generating training data set", flush=True)
-        ds_train = ds[0 : math.floor(df.size * percent)]
+        ds_train = ds[:math.floor(df.size * percent)]
 
         print("Generating test data set", flush=True)
         ds_test = ds[math.floor(df.size * percent) :]

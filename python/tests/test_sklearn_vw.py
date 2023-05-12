@@ -55,7 +55,6 @@ class BaseVWTest:
         # run VW through the sklearn estimator validation check
         # skip check until https://github.com/scikit-learn/scikit-learn/issues/16799 is closed
         return
-        check_estimator(self.estimator())
 
     def test_repr(self):
         model = self.estimator()
@@ -318,7 +317,7 @@ class TestVWMultiClassifier(BaseVWTest):
         model.fit(data.x, data.y)
         actual = model.predict(data.x)
         assert actual.shape == (100,)
-        assert all([x in [-1, 1] for x in actual])
+        assert all(x in [-1, 1] for x in actual)
 
     def test_repr(self):
         model = VWMultiClassifier()

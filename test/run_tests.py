@@ -114,7 +114,7 @@ class Completion:
     def __init__(self):
         self.lock = threading.Lock()
         self.condition = threading.Condition(self.lock)
-        self.completed: Dict[int, bool] = dict()
+        self.completed: Dict[int, bool] = {}
 
     def report_completion(self, id: int, success: bool) -> None:
         self.lock.acquire()
@@ -245,7 +245,7 @@ def create_file_diff(
         tofile=file_name_one,
         lineterm="",
     )
-    return list([line for line in diff])
+    return list(list(diff))
 
 
 def is_line_different(
@@ -256,13 +256,16 @@ def is_line_different(
 
     # some compile flags cause VW to report different code line number for the same exception
     # if this is the case we want to ignore that from the diff
-    if ref_tokens[0] == "[critical]" and output_tokens[0] == "[critical]":
-        # check that exception format is being followed
-        if ref_tokens[2][0] == "(" and ref_tokens[3][-1] == ")":
-            if ref_tokens[3][:-1].isnumeric():
-                # remove the line number before diffing
-                ref_tokens.pop(3)
-                output_tokens.pop(3)
+    if (
+        ref_tokens[0] == "[critical]"
+        and output_tokens[0] == "[critical]"
+        and ref_tokens[2][0] == "("
+        and ref_tokens[3][-1] == ")"
+        and ref_tokens[3][:-1].isnumeric()
+    ):
+        # remove the line number before diffing
+        ref_tokens.pop(3)
+        output_tokens.pop(3)
 
     if len(output_tokens) != len(ref_tokens):
         return True, "Number of tokens different", False
@@ -297,15 +300,20 @@ def is_line_different(
     if len(output_delimiters) != len(ref_delimiters):
         return True, "Number of tokens different", found_close_floats
 
-    for output_token, ref_token in zip(output_delimiters, ref_delimiters):
-        if output_token != ref_token:
-            return (
+    return next(
+        (
+            (
                 True,
                 f"Mismatch at token {output_token} {ref_token}",
                 found_close_floats,
             )
-
-    return False, "", found_close_floats
+            for output_token, ref_token in zip(
+                output_delimiters, ref_delimiters
+            )
+            if output_token != ref_token
+        ),
+        (False, "", found_close_floats),
+    )
 
 
 def are_lines_different(
@@ -326,12 +334,11 @@ def are_lines_different(
             found_close_floats = found_close_floats or found_close_floats_temp
             if is_different:
                 return True, reason
-        else:
-            if output_line != ref_line:
-                return (
-                    True,
-                    f"Lines differ - ref vs output: '{ref_line}' vs '{output_line}'",
-                )
+        elif output_line != ref_line:
+            return (
+                True,
+                f"Lines differ - ref vs output: '{ref_line}' vs '{output_line}'",
+            )
 
     return False, "Minor float difference ignored" if found_close_floats else ""
 
@@ -423,7 +430,7 @@ def run_command_line_test(
             posix = sys.platform != "win32"
             cmd = shlex.split(command_line, posix=posix)
 
-        checks: Dict[str, Union[StatusCheck, DiffCheck]] = dict()
+        checks: Dict[str, Union[StatusCheck, DiffCheck]] = {}
         try:
             result = subprocess.run(
                 cmd,
@@ -502,8 +509,8 @@ def run_command_line_test(
 
             if ref_file.endswith(".json"):
                 # Empty strings are falsy
-                output_json = json.loads(output_content) if output_content else dict()
-                ref_json = json.loads(ref_content) if ref_content else dict()
+                output_json = json.loads(output_content) if output_content else {}
+                ref_json = json.loads(ref_content) if ref_content else {}
                 dicts_equal, reason = are_dicts_equal(
                     output_json, ref_json, epsilon=epsilon
                 )
@@ -518,10 +525,7 @@ def run_command_line_test(
                     writer.write(output_content)
 
             diff = create_file_diff(output_content, output_file, ref_content, ref_file)
-            if is_different:
-                message = f"Diff not OK, {reason}"
-            else:
-                message = f"Diff OK, {reason}"
+            message = f"Diff not OK, {reason}" if is_different else f"Diff OK, {reason}"
             checks[output_file] = DiffCheck(is_different is False, message, diff)
     except:
         completed_tests.report_completion(test.id, False)
@@ -547,9 +551,8 @@ def create_test_dir(
     (test_working_dir / "models").mkdir(parents=True, exist_ok=True)
 
     for f in input_files:
-        file_to_copy = None
         search_paths = [test_ref_dir / f]
-        if len(dependencies) > 0:
+        if dependencies:
             search_paths.extend(
                 [(test_base_dir / f"test_{x}" / f) for x in dependencies]
             )
@@ -559,11 +562,14 @@ def create_test_dir(
                     for x in dependencies
                 ]
             )  # for input_files with a full path
-        for search_path in search_paths:
-            if search_path.exists() and not search_path.is_dir():
-                file_to_copy = search_path
-                break
-
+        file_to_copy = next(
+            (
+                search_path
+                for search_path in search_paths
+                if search_path.exists() and not search_path.is_dir()
+            ),
+            None,
+        )
         if file_to_copy is None:
             str_deps = [str(dep) for dep in dependencies]
             dependent_tests = ", ".join(str_deps)
@@ -606,7 +612,7 @@ def find_vw_binary(
     vw_search_paths = [test_base_ref_dir / ".." / "build" / "vowpalwabbit" / "cli"]
 
     def is_vw_binary(file: Path) -> bool:
-        return file.name == "vw" or file.name == "vw.exe"
+        return file.name in ["vw", "vw.exe"]
 
     return find_or_use_user_supplied_path(
         test_base_ref_dir=test_base_ref_dir,
@@ -624,7 +630,7 @@ def find_spanning_tree_binary(
     ]
 
     def is_spanning_tree_binary(file: Path) -> bool:
-        return file.name == "spanning_tree" or file.name == "spanning_tree.exe"
+        return file.name in ["spanning_tree", "spanning_tree.exe"]
 
     user_supplied_bin_path = (
         Path(user_supplied_bin_path) if user_supplied_bin_path is not None else None
@@ -646,7 +652,7 @@ def find_to_flatbuf_binary(
     ]
 
     def is_to_flatbuff_binary(file: Path) -> bool:
-        return file.name == "to_flatbuff" or file.name == "to_flatbuff.exe"
+        return file.name in ["to_flatbuff", "to_flatbuff.exe"]
 
     user_supplied_bin_path = (
         Path(user_supplied_bin_path) if user_supplied_bin_path is not None else None
@@ -668,9 +674,7 @@ def find_or_use_user_supplied_path(
 ) -> Optional[Path]:
     if user_supplied_bin_path is None:
         return find_in_path(search_paths, is_correct_bin_func)
-    if not user_supplied_bin_path.is_file():
-        return None
-    return user_supplied_bin_path
+    return None if not user_supplied_bin_path.is_file() else user_supplied_bin_path
 
 
 def do_dirty_check(test_base_ref_dir: Path) -> None:
@@ -776,7 +780,7 @@ def convert_tests_for_flatbuffers(
         # pdrop is not supported in fb, so 327-331 are excluded
         # 336, 337, 338, 442, 444, 450, 452 - the FB converter script seems to be affecting the invert_hash
         # 423, 424, 425, 426 - FB converter removes feature names from invert_hash (probably the same issue as above)
-        if str(test.id) in (
+        if str(test.id) in {
             "300",
             "189",
             "312",
@@ -815,7 +819,7 @@ def convert_tests_for_flatbuffers(
             "452",
             "456",
             "457",
-        ):
+        }:
             test.skip = True
             test.skip_reason = "test skipped for automatic converted flatbuffer tests for unknown reason"
             continue
@@ -848,10 +852,7 @@ def check_test_ids(tests: List[Any]) -> None:
 
     last_test_id = max(seen_ids)
     if len(seen_ids) != (last_test_id):
-        missing_ids = []
-        for i in range(1, last_test_id + 1):
-            if i not in seen_ids:
-                missing_ids.append(i)
+        missing_ids = [i for i in range(1, last_test_id + 1) if i not in seen_ids]
         raise ValueError(
             f"Missing test ids: [{', '.join(str(x) for x in missing_ids)}]"
         )
@@ -921,8 +922,12 @@ def convert_to_test_data(
                 depends_on=test["depends_on"] if "depends_on" in test else [],
                 command_line=command_line,
                 is_shell=is_shell,
-                input_files=test["input_files"] if "input_files" in test else [],
-                comparison_files=test["diff_files"] if "diff_files" in test else dict(),
+                input_files=test["input_files"]
+                if "input_files" in test
+                else [],
+                comparison_files=test["diff_files"]
+                if "diff_files" in test
+                else {},
                 skip=skip,
                 skip_reason=skip_reason,
             )
@@ -931,10 +936,7 @@ def convert_to_test_data(
 
 
 def get_test(test_number: int, tests: List[TestData]) -> Optional[TestData]:
-    for test in tests:
-        if test.id == test_number:
-            return test
-    return None
+    return next((test for test in tests if test.id == test_number), None)
 
 
 def interpret_test_arg(arg: str, *, num_tests: int) -> List[int]:
@@ -1231,26 +1233,25 @@ def main():
 
     executor = ThreadPoolExecutor(max_workers=args.jobs)
 
-    for test in tests:
-        tasks.append(
-            executor.submit(
-                run_command_line_test,
-                test,
-                overwrite=args.overwrite,
-                epsilon=args.epsilon,
-                base_working_dir=test_base_working_dir,
-                ref_dir=test_base_ref_dir,
-                completed_tests=completed_tests,
-                fuzzy_compare=args.fuzzy_compare,
-                valgrind=args.valgrind,
-                timeout=args.timeout,
-            )
+    tasks.extend(
+        executor.submit(
+            run_command_line_test,
+            test,
+            overwrite=args.overwrite,
+            epsilon=args.epsilon,
+            base_working_dir=test_base_working_dir,
+            ref_dir=test_base_ref_dir,
+            completed_tests=completed_tests,
+            fuzzy_compare=args.fuzzy_compare,
+            valgrind=args.valgrind,
+            timeout=args.timeout,
         )
-
+        for test in tests
+    )
     num_success = 0
     num_fail = 0
     num_skip = 0
-    while len(tasks) > 0:
+    while tasks:
         try:
             outcome: TestOutcome = tasks[0].result()
         except Exception:
@@ -1291,21 +1292,13 @@ def main():
             # Since this test produced a result - it must be in the tests list
             assert test is not None
             print(f"\tDescription: {test.description}")
-            print(
-                '\t{} _command: "{}"'.format(
-                    "bash" if test.is_shell else "vw", test.command_line
-                )
-            )
+            print(f'\t{"bash" if test.is_shell else "vw"} _command: "{test.command_line}"')
         for name, check in outcome.checks.items():
             # Don't print exit_code check as it is too much noise.
             if check.success and name == "exit_code":
                 continue
             print(
-                "\t[{}] {}: {}".format(
-                    name,
-                    success_text if check.success else fail_text,
-                    check.message,
-                )
+                f"\t[{name}] {success_text if check.success else fail_text}: {check.message}"
             )
             if not check.success:
                 if name == "exit_code":

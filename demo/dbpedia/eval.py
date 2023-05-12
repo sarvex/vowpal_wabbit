@@ -18,14 +18,10 @@ if __name__ == "__main__":
 
     y_true = []
     with open(args.truth, "rb") as t:
-        for line in t:
-            y_true.append(int(line.split(" ", 1)[0]))
-
+        y_true.extend(int(line.split(" ", 1)[0]) for line in t)
     y_pred = []
     with open(args.pred, "rb") as p:
-        for line in p:
-            y_pred.append(int(line.strip()))
-
+        y_pred.extend(int(line.strip()) for line in p)
     print(confusion_matrix(y_true, y_pred))
     print()
     print(classification_report(y_true, y_pred))

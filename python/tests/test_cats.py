@@ -2,15 +2,11 @@ import vowpalwabbit
 
 
 def test_cats():
-    min_value = 10
     max_value = 20
 
+    min_value = 10
     vw = vowpalwabbit.Workspace(
-        "--cats 4 --min_value "
-        + str(min_value)
-        + " --max_value "
-        + str(max_value)
-        + " --bandwidth 1"
+        f"--cats 4 --min_value {min_value} --max_value {max_value} --bandwidth 1"
     )
     vw_example = vw.parse(
         "ca 15:0.657567:6.20426e-05 | f1 f2 f3 f4", vowpalwabbit.LabelType.CONTINUOUS
@@ -29,15 +25,11 @@ def test_cats():
 
 
 def test_cats_pdf():
-    min_value = 10
     max_value = 20
 
+    min_value = 10
     vw = vowpalwabbit.Workspace(
-        "--cats_pdf 4 --min_value "
-        + str(min_value)
-        + " --max_value "
-        + str(max_value)
-        + " --bandwidth 1"
+        f"--cats_pdf 4 --min_value {min_value} --max_value {max_value} --bandwidth 1"
     )
     vw_example = vw.parse(
         "ca 15:0.657567:6.20426e-05 | f1 f2 f3 f4", vowpalwabbit.LabelType.CONTINUOUS

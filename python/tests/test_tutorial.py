@@ -73,7 +73,7 @@ class Simulator:
         example_string += f'shared |{ns1}ser user={context["user"]} time_of_day={context["time_of_day"]}\n'
         for action in actions:
             if cb_label is not None and action == chosen_action:
-                example_string += "0:{}:{} ".format(cost, prob)
+                example_string += f"0:{cost}:{prob} "
             example_string += f"|{ns2}ction article={action} \n"
         # Strip the last newline
         return example_string[:-1]

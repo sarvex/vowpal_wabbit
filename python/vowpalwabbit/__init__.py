@@ -69,7 +69,7 @@ def __getattr__(name):
             "Module DFtoVW has been renamed to dftovw. Please use the new name. The old alias will be removed in a future version.",
             DeprecationWarning,
         )
-        return _importlib.import_module("." + name, __name__)
+        return _importlib.import_module(f".{name}", __name__)
     if name in __all__:
-        return _importlib.import_module("." + name, __name__)
+        return _importlib.import_module(f".{name}", __name__)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -38,51 +38,48 @@ except getopt.GetoptError:
    printhelp()
    sys.exit(2)
 for opt, arg in opts:
-  if opt == '-h':
-    printhelp()
-    sys.exit()
-  elif opt == '-i':
-    infilename = arg  
-  elif opt == '-o':
-    outfilename = arg
-  elif opt == '-p':
-    pregex = arg
-  elif opt == '-n':
-    nregex = arg
-  elif opt == '-c':
-    category_index = int(arg)
-  elif opt == '-d':
-    delimeter = arg
+    if opt == '-c':
+        category_index = int(arg)
+    elif opt == '-d':
+        delimeter = arg
 
-if infilename:
-    infile = open (infilename,'r')
-else:
-    infile = sys.stdin
+    elif opt == '-h':
+        printhelp()
+        sys.exit()
+    elif opt == '-i':
+        infilename = arg
+    elif opt == '-n':
+        nregex = arg
+    elif opt == '-o':
+        outfilename = arg
+    elif opt == '-p':
+        pregex = arg
+infile = open (infilename,'r') if infilename else sys.stdin
 if outfilename:
     outfile = open (outfilename,'w')
 
 for line in infile:
-  line = re.sub('\||:|\s', '', line) # Remove vertical bar, colon, space, and newline; unsupported by vw file format
-  data = line.split(delimeter)
-  category = data.pop(category_index)
-  if re.search(nregex, category): # regex for negative category
-    category = "-1"
-  elif re.search(pregex, category): # regex for positive category
-    category = '1'
-  else:
-    sys.exit("Regex did not match a record, exiting.\nPostive Regex: " + pregex + "\nNegative Regex: "+ nregex + "\nRecord:\n" + line)
-  outline = category + " | "
-  colnum = 0
-  for col in data:
-    colstr = str(colnum)
-    #col = re.sub(r'\s','',col) # remove all whitespace
-    if re.search('^(\-)?[0-9.]*$', col) or re.search('^(\-)?[0-9.]*e(\+|-)[0-9.]*$', col): # If the feature is a number, then give it a label
-      outline = outline + "f" + colstr + ":" + col + " "
-    else: # If the feature is a string, then let vw handle it directly
-      outline = outline + col + ' '
-    colnum = colnum + 1
-  outline = outline + "\n"
-  if outfilename:
-    outfile.write(outline)
-  else:
-    sys.stdout.write(outline)
+    line = re.sub('\||:|\s', '', line) # Remove vertical bar, colon, space, and newline; unsupported by vw file format
+    data = line.split(delimeter)
+    category = data.pop(category_index)
+    if re.search(nregex, category): # regex for negative category
+      category = "-1"
+    elif re.search(pregex, category): # regex for positive category
+      category = '1'
+    else:
+      sys.exit("Regex did not match a record, exiting.\nPostive Regex: " + pregex + "\nNegative Regex: "+ nregex + "\nRecord:\n" + line)
+    outline = f"{category} | "
+    colnum = 0
+    for col in data:
+        colstr = str(colnum)
+            #col = re.sub(r'\s','',col) # remove all whitespace
+        if re.search('^(\-)?[0-9.]*$', col) or re.search('^(\-)?[0-9.]*e(\+|-)[0-9.]*$', col): # If the feature is a number, then give it a label
+            outline = f"{outline}f{colstr}:{col} "
+        else: # If the feature is a string, then let vw handle it directly
+            outline = outline + col + ' '
+        colnum = colnum + 1
+    outline = outline + "\n"
+    if outfilename:
+      outfile.write(outline)
+    else:
+      sys.stdout.write(outline)

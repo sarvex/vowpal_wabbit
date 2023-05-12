@@ -60,9 +60,9 @@ def merge_config(tracker, b):
 
 
 def print_non_supplied(config):
-    with_default = []
     without_default = []
 
+    with_default = []
     for name, config_group in config.items():
         for group_name, options in config_group:
             for option in options:
@@ -73,16 +73,9 @@ def print_non_supplied(config):
                         agg = with_default
 
                     if len(config_group) <= 1:
-                        agg.append(name + ", " + option.name + default_val_str)
+                        agg.append(f"{name}, {option.name}{default_val_str}")
                     else:
-                        agg.append(
-                            name
-                            + ", "
-                            + group_name
-                            + ", "
-                            + option.name
-                            + default_val_str
-                        )
+                        agg.append(f"{name}, {group_name}, {option.name}{default_val_str}")
 
                     agg = without_default
 
@@ -160,7 +153,7 @@ def main():
     from collections import Counter
 
     for c in Counter(stacks).most_common():
-        print(c[0] + ", " + str(c[1]))
+        print(f"{c[0]}, {str(c[1])}")
 
 
 if __name__ == "__main__":

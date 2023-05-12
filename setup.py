@@ -76,7 +76,7 @@ class BuildPyLibVWBindingsModule(_build_ext):
         config = "Debug" if self.distribution.debug else "Release"
 
         cmake_args = [
-            "-DCMAKE_BUILD_TYPE=" + config,
+            f"-DCMAKE_BUILD_TYPE={config}",
             "-DPY_VERSION=" + "{v[0]}.{v[1]}".format(v=version_info),
             "-DBUILD_PYTHON=On",
             "-DBUILD_TESTING=Off",
@@ -98,9 +98,7 @@ class BuildPyLibVWBindingsModule(_build_ext):
             required_shared_lib_suffix = sysconfig.get_config_var("EXT_SUFFIX")
 
         if required_shared_lib_suffix is not None:
-            cmake_args += [
-                "-DVW_PYTHON_SHARED_LIB_SUFFIX={}".format(required_shared_lib_suffix)
-            ]
+            cmake_args += [f"-DVW_PYTHON_SHARED_LIB_SUFFIX={required_shared_lib_suffix}"]
 
         if self.distribution.enable_boost_cmake is None:
             # Add this flag as default since testing indicates its safe.
@@ -113,10 +111,8 @@ class BuildPyLibVWBindingsModule(_build_ext):
 
         # If we are being installed in a conda environment then use the dependencies from there.
         if "CONDA_PREFIX" in os.environ:
-            cmake_args.append(
-                "-DCMAKE_PREFIX_PATH={}".format(os.environ["CONDA_PREFIX"])
-            )
-            cmake_args.append("-DPython_INCLUDE_DIR={}".format(get_python_inc()))
+            cmake_args.append(f'-DCMAKE_PREFIX_PATH={os.environ["CONDA_PREFIX"]}')
+            cmake_args.append(f"-DPython_INCLUDE_DIR={get_python_inc()}")
 
         # example of build args
         build_args = ["--config", config]
@@ -125,8 +121,8 @@ class BuildPyLibVWBindingsModule(_build_ext):
 
         if system == "Windows":
             cmake_args += [
-                "-DCMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG=" + str(lib_output_dir),
-                "-DCMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE=" + str(lib_output_dir),
+                f"-DCMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG={str(lib_output_dir)}",
+                f"-DCMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE={str(lib_output_dir)}",
             ]
 
             if cmake_generator is None:
@@ -140,18 +136,11 @@ class BuildPyLibVWBindingsModule(_build_ext):
                 vcpkg_toolchain = os.path.join(
                     abs_vcpkg_path, "scripts", "buildsystems", "vcpkg.cmake"
                 )
-                cmake_args += ["-DCMAKE_TOOLCHAIN_FILE=" + vcpkg_toolchain]
+                cmake_args += [f"-DCMAKE_TOOLCHAIN_FILE={vcpkg_toolchain}"]
 
         else:
-            cmake_args += [
-                "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=" + str(lib_output_dir),
-            ]
-            build_args += [
-                "--",
-                "-j{}".format(multiprocessing.cpu_count()),
-                # Build the pylibvw target
-                "pylibvw",
-            ]
+            cmake_args += [f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={str(lib_output_dir)}"]
+            build_args += ["--", f"-j{multiprocessing.cpu_count()}", "pylibvw"]
 
         if cmake_generator is not None:
             cmake_args += ["-G", cmake_generator]

@@ -57,7 +57,7 @@ def v(fmt, *args):
     """verbosity func (active when -v is in effect)"""
     if not Verbose:
         return
-    if len(args) == 0:
+    if not args:
         err(fmt)
     else:
         err(fmt % args)
@@ -70,7 +70,9 @@ def is_number(s):
     except ValueError:
         return False
 
-Usage = 'Usage: ' + ARGV0 + """ [options] [ignore columns] [file.csv...]
+Usage = (
+    f'Usage: {ARGV0}'
+    + """ [options] [ignore columns] [file.csv...]
     Options:
         -v          verbose
         -s<sep>     Explicitly specify field separator (Perl-regex)
@@ -130,6 +132,7 @@ Usage = 'Usage: ' + ARGV0 + """ [options] [ignore columns] [file.csv...]
             Assume first (0 index) column is the ID (and drop it from inputs)
             Assume 2nd (1 index) is the label (and drop it from inputs)
 """
+)
 
 def usage():
     """Pring usage message and exit"""
@@ -252,7 +255,7 @@ def col2idx(colno, maxcol, which):
         die("%s column: colno='%s' must be an index\n" % (which, colno))
     # index from end, map to non-negative
     colidx = colno if colno >= 0 else maxcol + 1 + colno
-    if not (0 <= colidx and colidx <= maxcol):
+    if not 0 <= colidx <= maxcol:
         die("%s column: colno: %s -> idx: %s: out of range [0 .. %s]\n" %
             (which, colno, colidx, maxcol))
     return colidx
@@ -297,7 +300,7 @@ def main():
                         ic_ix = col2idx(int(ic), last_idx, 'Ignore')
                         remove_indexes.append(ic_ix)
                     else:
-                        die("additional arg: %s is unsupported!" % ic)
+                        die(f"additional arg: {ic} is unsupported!")
 
             if args.header and not args.n:
                 feature_names = [f[idx] for idx in feature_idxs]
@@ -338,19 +341,18 @@ def main():
             # (Getting about 5MB/sec processing bandwidth) in perl
             # python optimization: combine the line with one join at the end
             # (use only one print per line)
-            line_parts = ['%s %s|' % (label, tag)]
+            line_parts = [f'{label} {tag}|']
 
             # v("Before feature loop: line_parts: %s\n", line_parts)
             for i in feature_idxs:
                 # v("line %d: tag:%s: feature loop: f[%s] -> %s\n",
                 #                 lineno, tag, i, f[i])
-                if args.e:
-                    if not f[i] or f[i] == '0':
-                        continue
+                if args.e and (not f[i] or f[i] == '0'):
+                    continue
 
                 sep = ':' if is_number(f[i]) else '='
-                line_parts.append('%s%s%s' % (feature_names[i], sep, f[i]))
-                # v("bottom of feature loop: line_parts: %s\n", line_parts)
+                line_parts.append(f'{feature_names[i]}{sep}{f[i]}')
+                            # v("bottom of feature loop: line_parts: %s\n", line_parts)
 
         except IndexError as ierr:
             die("Line %d: [%s]: "

@@ -22,7 +22,7 @@ class VArrayPrinter:
                 raise StopIteration
             element = self.item.dereference()
             self.item = self.item + 1
-            return ("[{}]".format(count), element)
+            return f"[{count}]", element
 
     def __init__(self, value):
         self.value = value
@@ -43,9 +43,7 @@ class VArrayPrinter:
         return itertools.chain(iter(object_info), children_item_iterator)
 
     def to_string(self):
-        return "size={}, capacity={}, erase count={}".format(
-            self.size, self.capacity, self.erase_count
-        )
+        return f"size={self.size}, capacity={self.capacity}, erase count={self.erase_count}"
 
     @staticmethod
     def display_hint():

@@ -28,6 +28,6 @@ def docs(filename):
             if docid is None:
                 m = startdocregex.match(line)
                 if m is not None:
-                    docid = m.group(1)
+                    docid = m[1]
                     paragraphs = []
                     curpara = []

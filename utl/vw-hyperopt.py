@@ -83,8 +83,7 @@ def read_arguments():
             "(optionally) seaborn to be installed."
         ),
     )
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 class HyperoptSpaceConstructor(object):
@@ -112,8 +111,7 @@ class HyperoptSpaceConstructor(object):
         for combo in all_combos:
             combo_ns_only = [re.sub("[^a-zA-Z]+", "", k) for k in combo]
             if len(Counter(combo_ns_only).keys()) == len_comb:
-                current_list = [combo[0]]
-                current_list.extend([f"{arg} {k}" for k in combo[1:]])
+                current_list = [combo[0], *[f"{arg} {k}" for k in combo[1:]]]
                 out_combos.append(" ".join(current_list))
         return out_combos
 
@@ -150,12 +148,12 @@ class HyperoptSpaceConstructor(object):
         distr_part = distr_part.replace("O", "")
 
         if is_continuous:
-            if arg == "--lrq" or arg == "--lrqfa":
+            if arg in ["--lrq", "--lrqfa"]:
                 possible_values = []
                 for current_int in range_part.split(","):
-                    possible_values_current = []
                     if "+" in current_int and arg == "--lrq":
                         list_range_part = current_int.split("+")
+                        possible_values_current = []
                         for range_part_k in list_range_part:
                             vmin, vmax = [
                                 int(re.sub("[^0-9]", "", i))
@@ -184,14 +182,14 @@ class HyperoptSpaceConstructor(object):
                 vmin, vmax = [float(i) for i in range_part.split("..")]
                 if distr_part == "L":
                     distrib = hp.loguniform(hp_choice_name, log(vmin), log(vmax))
-                elif distr_part == "":
+                elif not distr_part:
                     distrib = hp.uniform(hp_choice_name, vmin, vmax)
                 elif distr_part == "I":
                     distrib = scope.int(hp.quniform(hp_choice_name, vmin, vmax, 1))
                 elif distr_part in {"LI", "IL"}:
                     distrib = hp.qloguniform(hp_choice_name, log(vmin), log(vmax), 1)
                 else:
-                    raise ValueError("Cannot recognize distribution: %s" % (distr_part))
+                    raise ValueError(f"Cannot recognize distribution: {distr_part}")
 
         else:
             possible_values = range_part.split(",")
@@ -200,7 +198,7 @@ class HyperoptSpaceConstructor(object):
                 possible_values = [v.replace("+", f" {arg} ") for v in possible_values]
             distrib = hp.choice(hp_choice_name, possible_values)
         if try_omit_zero:
-            hp_choice_name_outer = hp_choice_name + "_outer"
+            hp_choice_name_outer = f"{hp_choice_name}_outer"
             distrib = hp.choice(hp_choice_name_outer, ["omit", distrib])
 
         return distrib
@@ -246,8 +244,6 @@ class HyperoptSpaceConstructor(object):
                 if arg not in self.algorithm_metadata[algo]["prohibited_flags"]:
                     distrib = self._process_vw_argument(arg, value, algo)
                     self.space[algo][arg] = distrib
-                else:
-                    pass
         self.space = hp.choice("algorithm", self.space.values())
 
 
@@ -325,31 +321,18 @@ class HyperOptimizer(object):
                 del kwargs[flag]
 
         self.param_suffix = " ".join(
-            ["%s %s" % (key, kwargs[key]) for key in kwargs if key.startswith("-")]
+            [f"{key} {kwargs[key]}" for key in kwargs if key.startswith("-")]
         )
-        self.param_suffix += " %s" % (kwargs["argument"])
+        self.param_suffix += f' {kwargs["argument"]}'
 
     def compose_vw_train_command(self):
-        data_part = "vw %s -d %s -f %s --holdout_off -c %s" % (
-            "--quiet" if self.quiet else "",
-            self.train_set,
-            self.train_model,
-            self.additional_cmd,
-        )
+        data_part = f'vw {"--quiet" if self.quiet else ""} -d {self.train_set} -f {self.train_model} --holdout_off -c {self.additional_cmd}'
         if self.labels_clf_count > 2:  # multiclass, should take probabilities
-            data_part += "--oaa %s --loss_function=logistic --probabilities " % (
-                self.labels_clf_count
-            )
+            data_part += f"--oaa {self.labels_clf_count} --loss_function=logistic --probabilities "
         self.train_command = " ".join([data_part, self.param_suffix])
 
     def compose_vw_validate_command(self):
-        data_part = "vw %s -t -d %s -i %s -p %s --holdout_off -c %s" % (
-            "--quiet" if self.quiet else "",
-            self.holdout_set,
-            self.train_model,
-            self.holdout_pred,
-            self.additional_cmd,
-        )
+        data_part = f'vw {"--quiet" if self.quiet else ""} -t -d {self.holdout_set} -i {self.train_model} -p {self.holdout_pred} --holdout_off -c {self.additional_cmd}'
         if self.labels_clf_count > 2:  # multiclass
             data_part += " --loss_function=logistic --probabilities"
         self.validate_command = data_part
@@ -357,14 +340,14 @@ class HyperOptimizer(object):
     def fit_vw(self):
         self.compose_vw_train_command()
         self.logger.info(
-            "executing the following command (training): %s" % self.train_command
+            f"executing the following command (training): {self.train_command}"
         )
         subprocess.call(shlex.split(self.train_command))
 
     def validate_vw(self):
         self.compose_vw_validate_command()
         self.logger.info(
-            "executing the following command (validation): %s" % self.validate_command
+            f"executing the following command (validation): {self.validate_command}"
         )
         subprocess.call(shlex.split(self.validate_command))
 
@@ -372,8 +355,7 @@ class HyperOptimizer(object):
         self.logger.info("loading true holdout class labels...")
         yh = open(self.holdout_set, "r")
         self.y_true_holdout = []
-        for line in yh:
-            self.y_true_holdout.append(float(line.split()[0]))
+        self.y_true_holdout.extend(float(line.split()[0]) for line in yh)
         if not self.is_regression:
             self.labels_clf_count = len(set(self.y_true_holdout))
             if self.labels_clf_count > 2 and self.outer_loss_function != "logistic":
@@ -386,7 +368,7 @@ class HyperOptimizer(object):
 
     def get_y_pred_holdout(self):
         y_pred_holdout = []
-        with open("%s" % self.holdout_pred, "r") as v:
+        with open(f"{self.holdout_pred}", "r") as v:
             for line in v:
                 if self.labels_clf_count > 2:
                     y_pred_holdout.append(
@@ -435,7 +417,7 @@ class HyperOptimizer(object):
         else:
             raise KeyError("Invalide outer loss function")
 
-        self.logger.info("parameter suffix: %s" % self.param_suffix)
+        self.logger.info(f"parameter suffix: {self.param_suffix}")
         self.logger.info("loss value: %.6f" % loss)
 
         return loss
@@ -455,12 +437,10 @@ class HyperOptimizer(object):
 
             finish = dt.now()
             elapsed = finish - start
-            self.logger.info("evaluation time for this step: %s" % str(elapsed))
+            self.logger.info(f"evaluation time for this step: {str(elapsed)}")
 
             # clean up
-            subprocess.call(
-                shlex.split("rm %s %s" % (self.train_model, self.holdout_pred))
-            )
+            subprocess.call(shlex.split(f"rm {self.train_model} {self.holdout_pred}"))
 
             to_return = {
                 "status": STATUS_OK,
@@ -487,10 +467,10 @@ class HyperOptimizer(object):
             algo=algo,
             max_evals=self.max_evals,
         )
-        self.logger.debug("the best hyperopt parameters: %s" % str(best_params))
+        self.logger.debug(f"the best hyperopt parameters: {str(best_params)}")
 
         json.dump(self.trials.results, open(self.trials_output, "w"))
-        self.logger.info("All the trials results are saved at %s" % self.trials_output)
+        self.logger.info(f"All the trials results are saved at {self.trials_output}")
 
         best_configuration = self.trials.results[np.argmin(self.trials.losses())][
             "train_command"
@@ -543,8 +523,7 @@ class HyperOptimizer(object):
         plt.tight_layout()
         plt.savefig(self.hyperopt_progress_plot)
         self.logger.info(
-            "The diagnostic hyperopt progress plot is saved: %s"
-            % self.hyperopt_progress_plot
+            f"The diagnostic hyperopt progress plot is saved: {self.hyperopt_progress_plot}"
         )
 
 

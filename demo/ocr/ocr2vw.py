@@ -2,10 +2,9 @@
 
 
 def read_letter_names(fn):
-    ret = list()
+    ret = []
     with open(fn) as ins:
-        for line in ins:
-            ret.append(line.rstrip())
+        ret.extend(line.rstrip() for line in ins)
     print("Read %d names from %s" % (len(ret), fn))
     return ret
 
@@ -30,7 +29,7 @@ def data2vw(ifn, train, test, names):
     id_pos = names.index("id")
     letter_pos = names.index("letter")
     pixel_start = find_pixel_start(names)
-    with iopener(ifn) as ins, open(train, "wb") as trainS, open(test, "wb") as testS:
+    with (iopener(ifn) as ins, open(train, "wb") as trainS, open(test, "wb") as testS):
         for line in ins:
             lineno += 1
             vals = line.rstrip().split("\t")
@@ -50,7 +49,7 @@ def data2vw(ifn, train, test, names):
             )
             for i in range(pixel_start, len(names)):
                 if vals[i] != "0":
-                    outs.write(" %s:%s" % (names[i], vals[i]))
+                    outs.write(f" {names[i]}:{vals[i]}")
             outs.write("\n")
     print(
         "Read %d lines from %s; wrote %d lines into %s and %d lines into %s"

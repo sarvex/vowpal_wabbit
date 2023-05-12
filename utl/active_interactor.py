@@ -73,14 +73,13 @@ def _get_getch_impl_macos() -> Optional[Callable[[], str]]:
         return None
 
     def _getch():
-        if Carbon.Evt.EventAvail(0x0008)[0] == 0:  # 0x0008 is the keyDownMask
+        if Carbon.Evt.EventAvail(0x0008)[0] == 0:
             return ""
-        else:
-            (what, msg, when, where, mod) = Carbon.Evt.GetNextEvent(0x0008)[1]
-            ch = chr(msg & 0x000000FF)
-            if ord(ch) == 3:
-                raise KeyboardInterrupt
-            return ch
+        (what, msg, when, where, mod) = Carbon.Evt.GetNextEvent(0x0008)[1]
+        ch = chr(msg & 0x000000FF)
+        if ord(ch) == 3:
+            raise KeyboardInterrupt
+        return ch
 
     return _getch
 
@@ -116,11 +115,7 @@ def get_label(
     pred: float,
     input_fn: Callable[[str], str],
 ) -> Optional[str]:
-    print(
-        'Request for example {}: tag="{}", prediction={}: {}'.format(
-            i, tag, pred, example
-        )
-    )
+    print(f'Request for example {i}: tag="{tag}", prediction={pred}: {example}')
     while True:
         label = input_fn("Provide? [0/1/skip]: ")
         if label == "1":
@@ -165,17 +160,13 @@ def active_process_unlabeled_dataset(
             # VW does not care about this label
             if verbose:
                 print(
-                    'Importance omitted from response for example {}, "{}", skipping...'.format(
-                        i, response.strip()
-                    )
+                    f'Importance omitted from response for example {i}, "{response.strip()}", skipping...'
                 )
             continue
         prediction, tag, importance = responselist
         if verbose:
             print(
-                "Example {} reponse: prediction={}, tag={}, importance={}".format(
-                    i, prediction, tag, importance
-                )
+                f"Example {i} reponse: prediction={prediction}, tag={tag}, importance={importance}"
             )
         try:
             imp = float(importance)
@@ -194,7 +185,7 @@ def active_process_unlabeled_dataset(
         front, rest = line.split("|", 1)
         if tag == "":
             tag = "'empty"
-        labeled_example = "{} {} {} |{}".format(label, imp, tag, rest)
+        labeled_example = f"{label} {imp} {tag} |{rest}"
         send_example(sock, labeled_example)
         if output:
             output.write(labeled_example)

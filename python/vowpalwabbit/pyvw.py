@@ -56,16 +56,16 @@ class _DeprecatedClassMeta(type):
 
         return super().__new__(cls, name, fixed_bases, classdict, *args, **kwargs)
 
-    def __instancecheck__(cls, instance):
+    def __instancecheck__(self, instance):
         return any(
-            cls.__subclasscheck__(c) for c in {type(instance), instance.__class__}
+            self.__subclasscheck__(c) for c in {type(instance), instance.__class__}
         )
 
-    def __subclasscheck__(cls, subclass):
-        if subclass is cls:
+    def __subclasscheck__(self, subclass):
+        if subclass is self:
             return True
         else:
-            return issubclass(subclass, getattr(cls, "_DeprecatedClassMeta__alias"))
+            return issubclass(subclass, getattr(self, "_DeprecatedClassMeta__alias"))
 
 
 class LabelType(IntEnum):
@@ -179,16 +179,16 @@ class VWOption:
         )
 
     def __str__(self):
-        if self.value_supplied:
-            if self.is_flag():
-                return "--{}".format(self.name)
-            else:
-                if isinstance(self.value, list):
-                    return " ".join(map(lambda x: f"--{self.name}={x}", self.value))
-                else:
-                    return "--{}={}".format(self.name, self.value)
-        else:
+        if not self.value_supplied:
             return ""
+        if self.is_flag():
+            return f"--{self.name}"
+        else:
+            return (
+                " ".join(map(lambda x: f"--{self.name}={x}", self.value))
+                if isinstance(self.value, list)
+                else f"--{self.name}={self.value}"
+            )
 
 
 class SearchTask:
@@ -527,10 +527,8 @@ class Workspace(pylibvw.vw):
 
         elif isinstance(str_ex, list):
             if all(
-                [
-                    isinstance(ex, Example) and getattr(ex, "setup_done", None)
-                    for ex in str_ex
-                ]
+                isinstance(ex, Example) and getattr(ex, "setup_done", None)
+                for ex in str_ex
             ):
                 str_ex: List[
                     Example
@@ -791,13 +789,13 @@ class Workspace(pylibvw.vw):
         sch = self.get_search_ptr()
 
         def predict(
-            examples,
-            my_tag,
-            oracle,
-            condition=None,
-            allowed=None,
-            learner_id=0,
-        ):
+                examples,
+                my_tag,
+                oracle,
+                condition=None,
+                allowed=None,
+                learner_id=0,
+            ):
             """The basic (via-reduction) prediction mechanism
 
             Args:
@@ -865,8 +863,6 @@ class Workspace(pylibvw.vw):
                         if hasattr(ec, "setup_done") and not ec.setup_done:
                             ec.setup_example()
                         P.set_input_at(n, ec)
-                else:
-                    pass  # TODO: do we need to set the examples even though they're not used?
             else:
                 if sch.predict_needs_example():
                     while hasattr(examples, "__call__"):
@@ -874,9 +870,6 @@ class Workspace(pylibvw.vw):
                     if hasattr(examples, "setup_done") and not examples.setup_done:
                         examples.setup_example()
                     P.set_input(examples)
-                else:
-                    pass  # TODO: do we need to set the examples even though they're not used?
-
             # if (isinstance(examples, list) and all([isinstance(ex, example) or
             #       isinstance(ex, pylibvw.example) for ex in examples])) or \
             #    isinstance(examples, example) or isinstance(examples, pylibvw.example):
@@ -905,9 +898,7 @@ class Workspace(pylibvw.vw):
                     condition = [condition]
                 for c in condition:
                     if not isinstance(c, tuple):
-                        raise TypeError(
-                            "item " + str(c) + " in condition list is malformed"
-                        )
+                        raise TypeError(f"item {str(c)} in condition list is malformed")
                     if (
                         len(c) == 2
                         and isinstance(c[0], int)
@@ -924,9 +915,7 @@ class Workspace(pylibvw.vw):
                     ):
                         P.add_condition_range(max(0, c[0]), max(0, c[1]), c[2])
                     else:
-                        raise TypeError(
-                            "item " + str(c) + " in condition list malformed"
-                        )
+                        raise TypeError(f"item {str(c)} in condition list malformed")
 
             if allowed is None:
                 pass
@@ -977,7 +966,7 @@ class NamespaceId:
         self.full = None
         if isinstance(id, int):  # you've specified a namespace by index
             if id < 0 or id >= ex.num_namespaces():
-                raise Exception("namespace " + str(id) + " out of bounds")
+                raise Exception(f"namespace {str(id)} out of bounds")
             self.id = id
             self.ord_ns = ex.namespace(id)
             self.ns = chr(self.ord_ns)
@@ -990,7 +979,7 @@ class NamespaceId:
             self.ord_ns = ord(self.ns)
         else:
             raise Exception(
-                "ns_to_characterord failed because id type is unknown: " + str(type(id))
+                f"ns_to_characterord failed because id type is unknown: {str(type(id))}"
             )
 
 
@@ -1121,7 +1110,7 @@ class SimpleLabel(AbstractLabel):
     def __str__(self):
         s = str(self.label)
         if self.weight != 1.0:
-            s += ":" + str(self.weight)
+            s += f":{str(self.weight)}"
         return s
 
 
@@ -1144,7 +1133,7 @@ class MulticlassLabel(AbstractLabel):
     def __str__(self):
         s = str(self.label)
         if self.weight != 1.0:
-            s += ":" + str(self.weight)
+            s += f":{str(self.weight)}"
         return s
 
 
@@ -1161,9 +1150,10 @@ class MulticlassProbabilitiesLabel(AbstractLabel):
         return MulticlassProbabilitiesLabel(prediction)
 
     def __str__(self):
-        s = []
-        for label, prediction in enumerate(self.prediction):
-            s.append("{l}:{p}".format(l=label + 1, p=prediction))
+        s = [
+            "{l}:{p}".format(l=label + 1, p=prediction)
+            for label, prediction in enumerate(self.prediction)
+        ]
         return " ".join(s)
 
 
@@ -1208,7 +1198,7 @@ class CostSensitiveLabel(AbstractLabel):
         return CostSensitiveLabel(costs, prediction)
 
     def __str__(self):
-        return " ".join(["{}:{}".format(c.label, c.cost) for c in self.costs])
+        return " ".join([f"{c.label}:{c.cost}" for c in self.costs])
 
 
 class CBLabelElement:
@@ -1260,9 +1250,7 @@ class CBLabel(AbstractLabel):
         return CBLabel(costs, weight)
 
     def __str__(self):
-        return " ".join(
-            ["{}:{}:{}".format(c.action, c.cost, c.probability) for c in self.costs]
-        )
+        return " ".join([f"{c.action}:{c.cost}:{c.probability}" for c in self.costs])
 
 
 class CBEvalLabel(AbstractLabel):
@@ -1295,10 +1283,7 @@ class CBEvalLabel(AbstractLabel):
 
     def __str__(self):
         return f"{self.action} " + " ".join(
-            [
-                "{}:{}:{}".format(c.action, c.cost, c.probability)
-                for c in self.cb_label.costs
-            ]
+            [f"{c.action}:{c.cost}:{c.probability}" for c in self.cb_label.costs]
         )
 
 
@@ -1329,7 +1314,7 @@ class CCBSlotOutcome:
 
     def __str__(self):
         top_action, top_score = self.action_probs[0].action, self.action_probs[0].score
-        out = "{}:{}:{}".format(top_action, round(self.cost, 2), round(top_score, 2))
+        out = f"{top_action}:{round(self.cost, 2)}:{round(top_score, 2)}"
         for action_score in self.action_probs[1:]:
             out += f",{action_score.action}:{action_score.score}"
         return out
@@ -1358,11 +1343,10 @@ class CCBLabel(AbstractLabel):
         weight = ex.get_ccb_weight()
         outcome = None
         if ex.get_ccb_has_outcome():
-            action_probs = []
-            for i in range(ex.get_ccb_num_probabilities()):
-                action_probs.append(
-                    ActionScore(ex.get_ccb_action(i), ex.get_ccb_probability(i))
-                )
+            action_probs = [
+                ActionScore(ex.get_ccb_action(i), ex.get_ccb_probability(i))
+                for i in range(ex.get_ccb_num_probabilities())
+            ]
             outcome = CCBSlotOutcome(ex.get_ccb_cost(), action_probs)
         return CCBLabel(type, explicit_included_actions, weight, outcome)
 
@@ -1412,23 +1396,22 @@ class SlatesLabel(AbstractLabel):
         labeled = ex.get_slates_labeled()
         cost = ex.get_slates_cost()
         slot_id = ex.get_slates_slot_id()
-        probabilities = []
-        for i in range(ex.get_slates_num_probabilities()):
-            probabilities.append(
-                ActionScore(ex.get_slates_action(i), ex.get_slates_probability(i))
-            )
+        probabilities = [
+            ActionScore(ex.get_slates_action(i), ex.get_slates_probability(i))
+            for i in range(ex.get_slates_num_probabilities())
+        ]
         return SlatesLabel(type, weight, labeled, cost, slot_id, probabilities)
 
     def __str__(self):
         ret = "slates "
         if self.type == SlatesLabelType.SHARED:
-            ret += "shared {}".format(round(self.cost, 2))
+            ret += f"shared {round(self.cost, 2)}"
         elif self.type == SlatesLabelType.ACTION:
-            ret += "action {}".format(self.slot_id)
+            ret += f"action {self.slot_id}"
         elif self.type == SlatesLabelType.SLOT:
             ret += "slot " + ",".join(
                 [
-                    "{}:{}".format(a_s.action, round(a_s.score, 2))
+                    f"{a_s.action}:{round(a_s.score, 2)}"
                     for a_s in self.probabilities
                 ]
             )
@@ -1465,7 +1448,7 @@ class CBContinuousLabel(AbstractLabel):
 
     def __str__(self):
         return "ca " + " ".join(
-            ["{}:{}:{}".format(c.action, c.cost, c.pdf_value) for c in self.costs]
+            [f"{c.action}:{c.cost}:{c.pdf_value}" for c in self.costs]
         )
 
 
@@ -1597,10 +1580,7 @@ class Example(pylibvw.example):
              NamespaceId created using parameter passed(if id was NamespaceId,
             just return it directly)
         """
-        if isinstance(id, NamespaceId):
-            return id
-        else:
-            return NamespaceId(self, id)
+        return id if isinstance(id, NamespaceId) else NamespaceId(self, id)
 
     def __getitem__(self, id: Union[NamespaceId, str, int]) -> ExampleNamespace:
         """Get an ExampleNamespace object associated with the given
@@ -1733,7 +1713,7 @@ class Example(pylibvw.example):
                     else self.vw.hash_space(ns.ns)
                 )
             return self.vw.hash_feature(feature, ns_hash)
-        raise Exception("cannot extract feature of type: " + str(type(feature)))
+        raise Exception(f"cannot extract feature of type: {str(type(feature))}")
 
     def push_hashed_feature(
         self, ns: Union[NamespaceId, str, int], f: int, v: float = 1.0
@@ -1918,11 +1898,7 @@ class Example(pylibvw.example):
                     "Passing an integer to get_prediction is deprecated and will be removed in a future release. Please pass a LabelType instead.",
                     DeprecationWarning,
                 )
-                if label_class == 0:
-                    label_class = None
-                else:
-                    label_class = LabelType(label_class)
-
+                label_class = None if label_class == 0 else LabelType(label_class)
             label_class_type = get_label_class_from_enum(label_class)
 
         return label_class_type.from_example(self)

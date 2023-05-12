@@ -34,11 +34,13 @@ class Token(object):
         self.id = id_
         # CoNLL format
         if len(attrs) == 10:
-            new_attrs = [str(int(attrs[0]) - 1)]
-            new_attrs.append(attrs[1])
-            new_attrs.append(attrs[3])
-            new_attrs.append(str(int(attrs[-4]) - 1))
-            new_attrs.append(attrs[-3])
+            new_attrs = [
+                str(int(attrs[0]) - 1),
+                attrs[1],
+                attrs[3],
+                str(int(attrs[-4]) - 1),
+                attrs[-3],
+            ]
             attrs = new_attrs
         self.label = attrs[-1]
         if self.label.lower() == "root":

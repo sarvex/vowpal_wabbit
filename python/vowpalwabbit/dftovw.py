@@ -44,7 +44,7 @@ class _Col:
         Returns:
             A valid VW feature name.
         """
-        name = str(name)
+        name = name
         valid_name = name.replace(":", " ").replace("|", " ").strip().replace(" ", "_")
 
         if valid_name != name:
@@ -118,9 +118,16 @@ class _Col:
         Raises:
             ValueError: If the values of the column are not valid.
         """
-        if self.min_value is not None and self.max_value is not None:
+        if self.min_value is not None:
             col_value = df[self.colname]
-            if not (
+            if self.max_value is None:
+                if not (col_value >= self.min_value).all():
+                    raise ValueError(
+                        "column '{colname}' must be >= {min_value}.".format(
+                            colname=self.colname, min_value=self.min_value
+                        )
+                    )
+            elif not (
                 (col_value >= self.min_value).all()
                 and (col_value <= self.max_value).all()
             ):
@@ -131,16 +138,6 @@ class _Col:
                         max_value=self.max_value,
                     )
                 )
-        elif self.min_value is not None:
-            col_value = df[self.colname]
-            if not (col_value >= self.min_value).all():
-                raise ValueError(
-                    "column '{colname}' must be >= {min_value}.".format(
-                        colname=self.colname, min_value=self.min_value
-                    )
-                )
-        else:
-            pass
 
 
 class _AttributeDescriptor(object):
@@ -345,15 +342,13 @@ class ContextualbanditLabel(object):
         Returns:
             The ContextualbanditLabel string representation.
         """
-        out = (
+        return (
             self.action.get_col(df)
             + ":"
             + self.cost.get_col(df)
             + ":"
             + self.probability.get_col(df)
         )
-
-        return out
 
 
 class Feature(object):
@@ -405,8 +400,7 @@ class Feature(object):
         if ensure_valid_values:
             value_col = value_col.apply(_Col.make_valid_name)
 
-        out = value_col.where(value_col == "", self.name + sep + value_col)
-        return out
+        return value_col.where(value_col == "", self.name + sep + value_col)
 
 
 class _Tag(object):
@@ -499,10 +493,8 @@ class Namespace(object):
                 )
 
         valid_feature = all(
-            [
-                isinstance(feature, self.expected_type["features"])
-                for feature in self.features
-            ]
+            isinstance(feature, self.expected_type["features"])
+            for feature in self.features
         )
         if not valid_feature:
             raise TypeError(
@@ -542,9 +534,9 @@ class _ListLabel(object):
     sep_by_label = dict(ContextualbanditLabel=" ", MultiLabel=",")
 
     def __init__(self, label_list: List[Union[ContextualbanditLabel, MultiLabel]]):
-        instance_classes = set(
-            [type(label_instance).__name__ for label_instance in label_list]
-        )
+        instance_classes = {
+            type(label_instance).__name__ for label_instance in label_list
+        }
         if len(instance_classes) > 1:
             raise TypeError("The list passed in 'label' has mixed label types.")
 
@@ -683,10 +675,7 @@ class DFtoVW:
         """
         self.df = df
         self.n_rows = df.shape[0]
-        if isinstance(label, list):
-            self.label = _ListLabel(label)
-        else:
-            self.label = label
+        self.label = _ListLabel(label) if isinstance(label, list) else label
         self.tag = _Tag(tag) if tag else None
 
         if label is not None:
@@ -806,18 +795,17 @@ class DFtoVW:
         namespaces = Namespace(features=[Feature(value=colname) for colname in x])
         if not y:
             return cls(namespaces=namespaces, label=None, df=df)
-        else:
-            y = y if isinstance(y, list) else [y]
-            if label_type not in ["multi_label"]:
-                if len(y) > 1:
-                    raise TypeError(
-                        "When label_type is 'simple_label' or 'multiclass', argument 'y' should be a string (or any hashable type) "
-                        + "or a list of exactly one string (or any hashable type)."
-                    )
-                else:
-                    y = y[0]
-            label = dict_label_type[label_type](y)
-            return cls(namespaces=namespaces, label=label, df=df)
+        y = y if isinstance(y, list) else [y]
+        if label_type not in ["multi_label"]:
+            if len(y) > 1:
+                raise TypeError(
+                    "When label_type is 'simple_label' or 'multiclass', argument 'y' should be a string (or any hashable type) "
+                    + "or a list of exactly one string (or any hashable type)."
+                )
+            else:
+                y = y[0]
+        label = dict_label_type[label_type](y)
+        return cls(namespaces=namespaces, label=label, df=df)
 
     def check_features_type(self, features: Union[Feature, List[Feature]]):
         """Check if the features argument is of type Feature.
@@ -829,7 +817,7 @@ class DFtoVW:
             TypeError: If the features is not a Feature of a list of Feature.
         """
         if isinstance(features, list):
-            valid_feature = all([isinstance(feature, Feature) for feature in features])
+            valid_feature = all(isinstance(feature, Feature) for feature in features)
         else:
             valid_feature = isinstance(features, Feature)
         if not valid_feature:
@@ -934,12 +922,11 @@ class DFtoVW:
 
         missing_cols["Feature"] = missing_features_cols
 
-        missing_cols = {
+        if missing_cols := {
             key: sorted(list(value))
             for (key, value) in missing_cols.items()
             if len(value) > 0
-        }
-        if missing_cols:
+        }:
             self.raise_missing_col_error(missing_cols)
 
     def raise_missing_col_error(self, missing_cols_dict):
@@ -990,7 +977,7 @@ class DFtoVW:
             if not isinstance(attribute_value, list):
                 attribute_value = [attribute_value]
 
-            if not all([isinstance(x, _Col) for x in attribute_value]):
+            if not all(isinstance(x, _Col) for x in attribute_value):
                 continue
 
             # Testing columns type
@@ -1027,7 +1014,7 @@ class DFtoVW:
         """
         self.out = self.empty_col()
 
-        if not all([x is None for x in [self.label, self.tag]]):
+        if any(x is not None for x in [self.label, self.tag]):
             self.out += self.process_label_and_tag()
 
         for i, namespace in enumerate(self.namespaces):

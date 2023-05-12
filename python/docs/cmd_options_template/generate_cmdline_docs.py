@@ -44,15 +44,15 @@ def main():
                 option["extra_info"] = extra_info["options"][option["name"]]
                 used_extra_info_options.add(option["name"])
 
-    unused_options = set(extra_info["options"].keys()).difference(
+    if unused_options := set(extra_info["options"].keys()).difference(
         used_extra_info_options
-    )
-    if len(unused_options) > 0:
+    ):
         print(f"Error: extra_info['options'] keys not used: {unused_options}")
         sys.exit(1)
 
-    unused_groups = set(extra_info["groups"].keys()).difference(used_extra_info_groups)
-    if len(unused_groups) > 0:
+    if unused_groups := set(extra_info["groups"].keys()).difference(
+        used_extra_info_groups
+    ):
         print(f"Error: extra_info['groups'] keys not used: {unused_groups}")
         sys.exit(1)
 
@@ -63,7 +63,7 @@ def main():
         "--helper",
         str(base_dir / "helpers") + "/*.js",
         "--partial",
-        str(base_dir) + "/inner_template.hbs",
+        f"{str(base_dir)}/inner_template.hbs",
         "--extension",
         "rst",
         "--output",

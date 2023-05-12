@@ -53,8 +53,8 @@ for counter in range(1, count + 1):
 
     if counter >= next_print or failed:
         sys.stderr.write("%s failed out of%5s\n" % (error, counter))
-        if counter >= next_print:
-            next_print *= 2
+    if counter >= next_print:
+        next_print *= 2
 
     if error:
         break

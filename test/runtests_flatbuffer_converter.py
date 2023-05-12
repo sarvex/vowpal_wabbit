@@ -36,7 +36,7 @@ class FlatbufferTest:
 
         # self.depends_on_cmd = depends_on_cmd
 
-        test_dir = self.working_dir.joinpath("test_" + self.test_id)
+        test_dir = self.working_dir.joinpath(f"test_{self.test_id}")
         if not Path(str(test_dir)).exists():
             Path(str(test_dir)).mkdir(parents=True, exist_ok=True)
 
@@ -45,7 +45,7 @@ class FlatbufferTest:
             if flags:
                 command = re.sub(tag, "", command)
             else:
-                command = re.sub("{} [:a-zA-Z0-9_.\-/]*".format(tag), "", command)
+                command = re.sub(f"{tag} [:a-zA-Z0-9_.\-/]*", "", command)
         return command
 
     def get_flatbuffer_file_names(self):
@@ -54,7 +54,7 @@ class FlatbufferTest:
                 file_basename = os.path.basename(input_file)
                 fb_file = "".join([file_basename, ".fb"])
                 fb_file_full_path = self.working_dir.joinpath(
-                    "test_" + self.test_id
+                    f"test_{self.test_id}"
                 ).joinpath(fb_file)
                 self.files_to_be_converted.append(
                     (i, str(input_file), str(fb_file_full_path))
@@ -69,7 +69,7 @@ class FlatbufferTest:
         if "stderr" in self.test.comparison_files:
             stderr_file = self.test.comparison_files["stderr"]
             stderr_test_file = str(
-                self.working_dir.joinpath("test_" + self.test_id).joinpath(
+                self.working_dir.joinpath(f"test_{self.test_id}").joinpath(
                     os.path.basename(str(self.working_dir.joinpath(stderr_file)))
                 )
             )
@@ -78,7 +78,7 @@ class FlatbufferTest:
                 for line in contents:
                     tmp_f.write(line)
 
-            self.test.comparison_files["stderr"] = str(stderr_test_file)
+            self.test.comparison_files["stderr"] = stderr_test_file
 
     def replace_test_input_files(self):
         # replace the input_file to point to the generated flatbuffer file
@@ -105,12 +105,9 @@ class FlatbufferTest:
             "--search_max_branch",
         ]
 
-        # if model already exists it contains needed arguments so use it in conversion
-        use_model = False
-        for input_file in self.stashed_input_files:
-            if "model-set" in input_file:
-                use_model = True
-
+        use_model = any(
+            "model-set" in input_file for input_file in self.stashed_input_files
+        )
         if not use_model:
             arguments_to_remove.append("-i")  # lose the model input
 
@@ -129,29 +126,19 @@ class FlatbufferTest:
 
         for i, from_file, to_file in self.files_to_be_converted:
             # replace depends_on filename with our filename, will do nothing if no depends_on
-            to_flatbuff_command = re.sub(
-                "{} [:a-zA-Z0-9_.\-/]*".format("-d"),
-                "",
-                to_flatbuff_command,
-            )
-            to_flatbuff_command = f"-d {from_file} " + to_flatbuff_command
+            to_flatbuff_command = re.sub(f"-d [:a-zA-Z0-9_.\-/]*", "", to_flatbuff_command)
+            to_flatbuff_command = f"-d {from_file} {to_flatbuff_command}"
 
-            cmd = "{} {} {} {}".format(
-                to_flatbuff, to_flatbuff_command, "--fb_out", to_file
-            )
+            cmd = f"{to_flatbuff} {to_flatbuff_command} --fb_out {to_file}"
             if self.depends_on_cmd is not None and "audit" in self.test.command_line:
                 cmd += " --audit"
             print(
-                "{}CONVERT COMMAND {} {}{}".format(
-                    color_enum.LIGHT_PURPLE, self.test_id, cmd, color_enum.ENDC
-                )
+                f"{color_enum.LIGHT_PURPLE}CONVERT COMMAND {self.test_id} {cmd}{color_enum.ENDC}"
             )
             result = subprocess.run(shlex.split(cmd), check=True)
             if result.returncode != 0:
                 raise RuntimeError(
-                    "Generating flatbuffer file failed with {} {} {}".format(
-                        result.returncode, result.stderr, result.stdout
-                    )
+                    f"Generating flatbuffer file failed with {result.returncode} {result.stderr} {result.stdout}"
                 )
 
     def replace_vw_command(self):
@@ -172,7 +159,7 @@ class FlatbufferTest:
         for i, from_file, to_file in self.files_to_be_converted:
             self.test.command_line = self.test.command_line.replace(from_file, to_file)
         # add --flatbuffer argument
-        self.test.command_line = self.test.command_line + " --flatbuffer"
+        self.test.command_line = f"{self.test.command_line} --flatbuffer"
 
     def to_flatbuffer(self, to_flatbuff, color_enum):
         self.get_flatbuffer_file_names()

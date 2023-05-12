@@ -75,15 +75,13 @@ def try_get_workspace_or_none(
     skip_missing_args: bool = False,
 ):
     try:
-        vw = vowpalwabbit.Workspace(cli, quiet=quiet)
-        return vw
+        return vowpalwabbit.Workspace(cli, quiet=quiet)
     except RuntimeError as e:
-        if skip_missing_args:
-            if "unrecognised option" in str(e):
-                print(
-                    f"{color_enum.LIGHT_PURPLE}Skipping this test as there are new cli arguments present{color_enum.ENDC}"
-                )
-                return None
+        if skip_missing_args and "unrecognised option" in str(e):
+            print(
+                f"{color_enum.LIGHT_PURPLE}Skipping this test as there are new cli arguments present{color_enum.ENDC}"
+            )
+            return None
         raise e
 
 
@@ -219,11 +217,11 @@ def get_tests(
             not test.depends_on
             and not test.is_shell
             and not test.skip
-            and not "-i " in test.command_line
-            and not "--no_stdin" in test.command_line
-            and not "--help" in test.command_line
-            and not "--flatbuffer" in test.command_line
-            and not test.id in skip_pr_tests
+            and "-i " not in test.command_line
+            and "--no_stdin" not in test.command_line
+            and "--help" not in test.command_line
+            and "--flatbuffer" not in test.command_line
+            and test.id not in skip_pr_tests
         ):
             test.command_line = re.sub("-f [:a-zA-Z0-9_.\\-/]*", "", test.command_line)
             test.command_line = re.sub("-f=[:a-zA-Z0-9_.\\-/]*", "", test.command_line)
@@ -357,7 +355,7 @@ def main():
     parser.add_argument(
         "--skip_missing_args",
         action="store_true",
-        help=f"This should be set when running on a previous version of VW. If new arguments then initializing VW with them is expected to fail.",
+        help="This should be set when running on a previous version of VW. If new arguments then initializing VW with them is expected to fail.",
     )
 
     parser.add_argument(

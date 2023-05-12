@@ -47,11 +47,11 @@ else:
 # and features values were normalized (this helps with performance).
 if not os.path.exists(train_data):
     print("Downloading train dataset:")
-    os.system("wget http://www.cs.put.poznan.pl/mwydmuch/data/{}".format(train_data))
+    os.system(f"wget http://www.cs.put.poznan.pl/mwydmuch/data/{train_data}")
 
 if not os.path.exists(test_data):
     print("Downloading test dataset:")
-    os.system("wget http://www.cs.put.poznan.pl/mwydmuch/data/{}".format(test_data))
+    os.system(f"wget http://www.cs.put.poznan.pl/mwydmuch/data/{test_data}")
 
 
 print(f"\nTraining Vowpal Wabbit {reduction} on {dataset} dataset:\n")

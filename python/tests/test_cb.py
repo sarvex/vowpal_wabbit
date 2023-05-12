@@ -142,9 +142,8 @@ def is_line_different(output_line: str, ref_line: str, epsilon: float) -> bool:
             are_equal = are_floats_equal(output_token, ref_token, epsilon)
             if not are_equal:
                 return True
-        else:
-            if output_token != ref_token:
-                return True
+        elif output_token != ref_token:
+            return True
 
     return False
 
@@ -160,26 +159,14 @@ def helper_getting_started_example(which_cb):
     )
 
     for i in train_df.index:
-        action = train_df.loc[i, "action"]
         cost = train_df.loc[i, "cost"]
         probability = train_df.loc[i, "probability"]
         feature1 = train_df.loc[i, "feature1"]
         feature2 = train_df.loc[i, "feature2"]
         feature3 = train_df.loc[i, "feature3"]
 
-        learn_example = (
-            str(action)
-            + ":"
-            + str(cost)
-            + ":"
-            + str(probability)
-            + " | "
-            + str(feature1)
-            + " "
-            + str(feature2)
-            + " "
-            + str(feature3)
-        )
+        action = train_df.loc[i, "action"]
+        learn_example = f"{str(action)}:{str(cost)}:{str(probability)} | {str(feature1)} {str(feature2)} {str(feature3)}"
         vw.learn(learn_example)
 
     assert (
@@ -190,11 +177,9 @@ def helper_getting_started_example(which_cb):
         feature1 = test_df.loc[j, "feature1"]
         feature2 = test_df.loc[j, "feature2"]
         feature3 = test_df.loc[j, "feature3"]
-        choice = vw.predict(
-            "| " + str(feature1) + " " + str(feature2) + " " + str(feature3)
-        )
+        choice = vw.predict(f"| {str(feature1)} {str(feature2)} {str(feature3)}")
         assert isinstance(choice, int), "choice should be int"
-        assert choice == 3, "predicted action should be 3 instead of " + str(choice)
+        assert choice == 3, f"predicted action should be 3 instead of {str(choice)}"
 
     # test that metrics is empty since "--extra_metrics filename" was not supplied
     assert len(vw.get_learner_metrics()) == 0
@@ -230,26 +215,14 @@ def test_getting_started_example_with():
     vw = vowpalwabbit.Workspace("--cb 4")
     with vw as vw:
         for i in train_df.index:
-            action = train_df.loc[i, "action"]
             cost = train_df.loc[i, "cost"]
             probability = train_df.loc[i, "probability"]
             feature1 = train_df.loc[i, "feature1"]
             feature2 = train_df.loc[i, "feature2"]
             feature3 = train_df.loc[i, "feature3"]
 
-            learn_example = (
-                str(action)
-                + ":"
-                + str(cost)
-                + ":"
-                + str(probability)
-                + " | "
-                + str(feature1)
-                + " "
-                + str(feature2)
-                + " "
-                + str(feature3)
-            )
+            action = train_df.loc[i, "action"]
+            learn_example = f"{str(action)}:{str(cost)}:{str(probability)} | {str(feature1)} {str(feature2)} {str(feature3)}"
             vw.learn(learn_example)
 
         assert (
@@ -260,9 +233,7 @@ def test_getting_started_example_with():
             feature1 = test_df.loc[j, "feature1"]
             feature2 = test_df.loc[j, "feature2"]
             feature3 = test_df.loc[j, "feature3"]
-            choice = vw.predict(
-                "| " + str(feature1) + " " + str(feature2) + " " + str(feature3)
-            )
+            choice = vw.predict(f"| {str(feature1)} {str(feature2)} {str(feature3)}")
             assert isinstance(choice, int), "choice should be int"
             assert choice == 3, "predicted action should be 3"
 

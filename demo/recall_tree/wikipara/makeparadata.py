@@ -42,7 +42,7 @@ with open("docid2label", "wb") as f:
 
         random.shuffle(goodparagraphs)
 
-        for n in goodparagraphs[0 : (numparagraphs - 1)]:
+        for n in goodparagraphs[:numparagraphs - 1]:
             tokens = [
                 t.strip(string.punctuation).translate(None, ":|")
                 for t in paragraphs[n].split()

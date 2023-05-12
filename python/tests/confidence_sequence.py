@@ -13,8 +13,7 @@ class incremental_f_sum:
             if abs(x) < abs(y):
                 x, y = y, x
             hi = x + y
-            lo = y - (hi - x)
-            if lo:
+            if lo := y - (hi - x):
                 self.partials[i] = lo
                 i += 1
             x = hi
@@ -184,7 +183,7 @@ class confidence_sequence(object):
         v = max(v, 1)
         gamma1 = (eta ** (1 / 4) + eta ** (-1 / 4)) / sqrt(2)
         gamma2 = (sqrt(eta) + 1) / 2
-        assert log(eta * v, eta) + 1 > 0, 1 + log(eta * v, eta)
+        assert log(eta * v, eta) > -1, 1 + log(eta * v, eta)
         ll = s * log(log(eta * v, eta) + 1) + log(zeta_s / alpha)
 
         return max(

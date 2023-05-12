@@ -8,8 +8,7 @@ def helper_options_to_list_strings(config):
     for name, config_group in config.items():
         for group_name, options in config_group:
             for option in options:
-                temp_str = str(option)
-                if temp_str:
+                if temp_str := str(option):
                     cmd_str_list.append(temp_str)
 
     return cmd_str_list
@@ -51,11 +50,7 @@ def test_vw_config_manager():
 def test_vw_get_all_options():
     config = pyvw.get_all_vw_options()
 
-    cmd_str_list = set()
-
-    for name, config_group in config.items():
-        cmd_str_list.add(name)
-
+    cmd_str_list = {name for name, config_group in config.items()}
     assert len(cmd_str_list) >= 74
 
 

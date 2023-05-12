@@ -12,8 +12,7 @@ def system(cmd, verbose=True):
     cmd = cmd.replace("VW", VW)
     if verbose:
         sys.stderr.write("+ %s\n" % cmd)
-    retcode = os.system(cmd)
-    if retcode:
+    if retcode := os.system(cmd):
         sys.exit(1)
 
 
@@ -36,7 +35,7 @@ def unlink(filename):
 def get_file_size(filename, cache={}):
     if filename in cache:
         return cache[filename]
-    file_size = int(os.popen("wc -l < %s" % filename).read())
+    file_size = int(os.popen(f"wc -l < {filename}").read())
     cache[filename] = file_size
     return file_size
 
@@ -68,7 +67,7 @@ def do_test(filename, args, verbose=None, repeat_args=None, known_failure=False)
     if verbose:
         sys.stderr.write("Using splits: %s\n" % splits)
 
-    tmp_model = "tmp.save_resume_test.%s" % os.getpid()
+    tmp_model = f"tmp.save_resume_test.{os.getpid()}"
 
     resume_args = args if repeat_args else ""
 
@@ -76,49 +75,27 @@ def do_test(filename, args, verbose=None, repeat_args=None, known_failure=False)
         for index, split in enumerate(splits[:-1]):
             try:
                 system(
-                    "head -n %s %s | VW %s -f %s.full --quiet"
-                    % (split, filename, args, tmp_model),
+                    f"head -n {split} {filename} | VW {args} -f {tmp_model}.full --quiet",
                     verbose=verbose,
                 )
 
                 if index:
                     system(
-                        "head -n %s %s | tail -n %s | VW --quiet -f %s.resume -i %s.resume %s"
-                        % (
-                            split,
-                            filename,
-                            split - splits[index - 1],
-                            tmp_model,
-                            tmp_model,
-                            resume_args,
-                        ),
+                        f"head -n {split} {filename} | tail -n {split - splits[index - 1]} | VW --quiet -f {tmp_model}.resume -i {tmp_model}.resume {resume_args}",
                         verbose=verbose,
                     )
                 else:
                     system(
-                        "head -n %s %s | VW %s --quiet -f %s.resume"
-                        % (split, filename, args, tmp_model),
+                        f"head -n {split} {filename} | VW {args} --quiet -f {tmp_model}.resume",
                         verbose=verbose,
                     )
 
                 predictions_normal = read_output(
-                    "head -n %s %s | tail -n %s | VW --quiet -i %s.full -t -p /dev/stdout"
-                    % (
-                        splits[index + 1],
-                        filename,
-                        splits[index + 1] - split,
-                        tmp_model,
-                    ),
+                    f"head -n {splits[index + 1]} {filename} | tail -n {splits[index + 1] - split} | VW --quiet -i {tmp_model}.full -t -p /dev/stdout",
                     verbose=verbose,
                 )
                 predictions_resume = read_output(
-                    "head -n %s %s | tail -n %s | VW --quiet -i %s.resume -t -p /dev/stdout"
-                    % (
-                        splits[index + 1],
-                        filename,
-                        splits[index + 1] - split,
-                        tmp_model,
-                    ),
+                    f"head -n {splits[index + 1]} {filename} | tail -n {splits[index + 1] - split} | VW --quiet -i {tmp_model}.resume -t -p /dev/stdout",
                     verbose=verbose,
                 )
 
@@ -144,9 +121,9 @@ def do_test(filename, args, verbose=None, repeat_args=None, known_failure=False)
                             do_test(filename, args, verbose=True)
                         return 1
             finally:
-                unlink(tmp_model + ".full")
+                unlink(f"{tmp_model}.full")
     finally:
-        unlink(tmp_model + ".resume")
+        unlink(f"{tmp_model}.resume")
 
     if known_failure:
         sys.stderr.write("OK (BUT EXPECTED TO FAIL) %s %s\n" % (VW, args))
@@ -215,4 +192,4 @@ if __name__ == "__main__":
         errors += do_test("train-sets/multiclass", "--recall_tree 10")
 
     if errors:
-        sys.exit("%s failed" % errors)
+        sys.exit(f"{errors} failed")
